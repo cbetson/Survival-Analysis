@@ -1,0 +1,143 @@
+---
+title: "Final Project"
+author: "Carsten Betson"
+date: "2023-04-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Dataset #
+```{r}
+co <- c(1, 63, 105, 129, 182, 216, 250, 262, 301, 301, 342, 354, 356, 358, 380, 383, 383, 388, 394, 408, 460, 489, 499, 523, 524, 535, 562, 569, 675, 676, 748, 778, 786, 797, 955, 968, 1000, 1245, 1271, 1420, 1551, 1694, 2363, 2754, 2950)
+cenco <- c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0)
+ctrt<- c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+cpr <- c(17, 42, 44, 48, 60, 72, 74, 95, 103, 108, 122, 144, 167, 170, 183, 185, 193, 195, 197, 208, 234, 235, 254, 307, 315, 401, 445, 464, 484, 528, 542, 547, 577, 580, 795, 855, 1366, 1577, 2060, 2412, 2486, 2796, 2802, 2934, 2988)
+cencpr <- c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0)
+cprtrt <- c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+combd <- c(1, 63, 105, 129, 182, 216, 250, 262, 301, 301, 342, 354, 356, 358, 380, 383, 383, 388, 394, 408, 460, 489, 499, 523, 524, 535, 562, 569, 675, 676, 748, 778, 786, 797, 955, 968, 1000, 1245, 1271, 1420, 1551, 1694, 2363, 2754, 2950,17, 42, 44, 48, 60, 72, 74, 95, 103, 108, 122, 144, 167, 170, 183, 185, 193, 195, 197, 208, 234, 235, 254, 307, 315, 401, 445, 464, 484, 528, 542, 547, 577, 580, 795, 855, 1366, 1577, 2060, 2412, 2486, 2796, 2802, 2934, 2988)
+combc <- c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0)
+combtrt <- c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+df <- data.frame(co,cenco,ctrt,cpr,cencpr,cprtrt,combd,combc,combtrt)
+```
+
+# Nonparametric Model - Chapter 4 #
+## How to Compute Kaplan-Meier Estimate ##
+To compute the Kaplan-Meier Estimate we will need to find a few different values. Since the Kaplan-Meier Estimate is a nonparametric model our graph is going to look like a step function because we can not assume anything, we can only use the data that is not censored. We will need to know the observed survival times (t), total number at risk at time t (n), how many repetitions at that given time (d). From there we can estimate the hazard (q or lambda) for each time by computing the repetitions over the total number at risk. The survival function is then the product of (1-hazard) for all the prior times. We can do this for all of the observed times to get the Kaplan-Meier Estimate for the data. Since our data has so many points it is easier to compute the estimate in R. To do this we need to use the survdiff and surv function. Below is the Kaplan-Meier Estimate computed in R.
+
+## Graph ##
+```{r}
+library(survival)
+survdiff(Surv(combd, combc) ~ combtrt)
+plot(survfit(Surv(combd,combc) ~ combtrt), xlab="Time in Days",
+   ylab="Survival probability", col=c("blue", "red"), lwd=2)
+legend("topright", legend=c("Chemo Only", "Chemo and Radiation"),
+  col=c("blue","red"), lwd=2)
+```
+
+## Comments Nonparametric Model ##
+Since the p-value is equal to 0.6 we can say that there isn't significant evidence to say that the two survival groups are different. Looking at the graph you can see that the two survival probability curves look very similar, so it is not surprising that there isn't enough evidence to prove they are different.
+
+# Proportional Hazard Model - Chapter 5 #
+## Graph ##
+```{r}
+library(survival)
+result.coxph <- coxph(Surv(combd, combc) ~ combtrt)
+summary(result.coxph)
+plot(survfit(coxph(Surv(co, cenco)~(ctrt), data = df)), conf.int = F, col="red", xlab="Time in Days", ylab="Survival Probability")
+lines(col="blue",survfit(coxph(Surv(cpr, cencpr)~(cprtrt==1), data = df), conf.int = F))
+legend("bottomleft", legend=c("Chemo", "Chemo and Radiation"),
+  col=c("red","blue"), lwd=2)
+```
+
+## Comments Proportional Hazard Model ##
+When looking at the proportional hazard model we get the same p-value as we did with the nonparametric model which was 0.6. This means there isn't enough evidence to conclude that the two groups are different. The graph also looks very similar to the one created by the nonparametric model showing the curves are close together supporting the fact that there is no difference between the two groups.
+
+# Parametric Model #
+## Testing Weibull ##
+```{r}
+library(survival)
+result.km <- survfit(Surv(combd, combc) ~ combtrt, data=df)
+survEst <- result.km$surv 
+survTime <- result.km$time
+logLogSurvEst <- log(-log(survEst)) 
+logSurvTime <- log(survTime)
+plot(logLogSurvEst ~ logSurvTime, main="Weibull Distribution") 
+result.lm <- lm(logLogSurvEst ~ logSurvTime)
+abline(result.lm)
+summary(result.lm)
+```
+
+## Comments on Weibull ##
+Looking at the residuals it looks like a weibull distribution is not a good fit for the parametric model. From here we need to figure out which distribution should be used for our survival analysis.
+
+## Best Distribution ##
+```{r}
+library(muhaz)
+library(survival)
+library(flexsurv)
+library(data.table)
+library(ggplot2)
+ggplot2::theme_set(theme_minimal())
+kernel_haz_est <- muhaz(df$combd,df$combc)
+kernel_haz <- data.table(time = kernel_haz_est$est.grid,
+                         est = kernel_haz_est$haz.est,
+                         method = "Kernel density")
+dists <- c("exp", "weibull", "gompertz", "gamma", 
+           "lognormal", "llogis", "gengamma")
+dists_long <- c("Exponential", "Weibull (AFT)",
+                "Gompertz", "Gamma", "Lognormal", "Log-logistic",
+                "Generalized gamma")
+parametric_haz <- vector(mode = "list", length = length(dists))
+for (i in 1:length(dists)){
+  fit <- flexsurvreg(Surv(combd, combc) ~ 1, data = df, dist = dists[i]) 
+  parametric_haz[[i]] <- summary(fit, type = "hazard", 
+                                     ci = FALSE, tidy = TRUE)
+  parametric_haz[[i]]$method <- dists_long[i]
+}
+parametric_haz <- rbindlist(parametric_haz)
+haz <- rbind(kernel_haz, parametric_haz)
+haz[, method := factor(method,
+                       levels = c("Kernel density",
+                                  dists_long))]
+n_dists <- length(dists) 
+ggplot(haz, aes(x = time, y = est, col = method, linetype = method)) +
+  geom_line() +
+  xlab("Days") + ylab("Hazard") + 
+  scale_colour_manual(name = "", 
+                      values = c("black", rainbow(n_dists))) +
+  scale_linetype_manual(name = "",
+                        values = c(1, rep_len(2:6, n_dists)))
+```
+
+## Comments on Distribution ##
+Looking online I found a way to plot the hazard functions for each of the distributions. When looking at the graph it looks like the log logistic hazard function is the closest to our hazard function.
+
+## p-vals for each distribution ##
+```{r}
+library(survival)
+result.survreg.w <- survreg(Surv(combd, combc) ~ combtrt, dist="weibull")
+summary(result.survreg.w)
+result.survreg.e <- survreg(Surv(combd, combc) ~ combtrt, dist="exponential")
+summary(result.survreg.e)
+result.survreg.g <- survreg(Surv(combd, combc) ~ combtrt, dist="gaussian")
+summary(result.survreg.g)
+result.survreg.l <- survreg(Surv(combd, combc) ~ combtrt, dist="logistic")
+summary(result.survreg.l)
+result.survreg.ln <- survreg(Surv(combd, combc) ~ combtrt, dist="lognormal")
+summary(result.survreg.ln)
+result.survreg.ll <- survreg(Surv(combd, combc) ~ combtrt, dist="loglogistic")
+summary(result.survreg.ll)
+```
+
+## Comments on p-vals ##
+No matter what distribution we use there still isn't significant evidence to say that the two groups are different. Looking at the log-logistic distribution specifically you can see the p-value is 0.051 so it is very close to rejecting the null. 
+
+# Comments on Best Model #
+In general I believe that the Cox model is the best model to use. The reason being is because it can use multiple predictors in its survival model. In this specific case I think that either the Kaplan-Meier or Cox Model would be the best model. The reason that these two are so similar in p-val is because we are dealing with a simpler data set that only has one predictor being the different groups. The reason I do not like the nonparametric case is because you need to pick a distribution that aligns with your data set. In this example you can look at the different hazard curves and see that our data set follows closest to the log logisitic distribution. This can cause problems though because although our data is closest to a log logistic distribution it still isn't perfect. Since there aren't any distributions that follow very closely to our data a nonparametric approach wouldn't be appropriate. If I were to pick one of the three to be the best model I would pick the Cox Model. The reason being is that it has the most options in my opinion compared to the Kaplan-Meier model. If we were dealing with multiple predictors we would have to use the Cox Model over the Kaplan Meier Model so for this fact I would stick with what we could use in more practical cases which is the Cox Model. The Cox Model can also take censored data into account where the Kaplan-Meier Model can only take the observed value into account. This gives the Cox Model a leg up over the Kaplan Meier Model.
+
+# Next Steps #
+Now that we have looked at the entire data set and computed the p-values for the 3 different cases we can conclude that there isn't enough evidence to prove that the two groups are different. From here we could look at the Case Deletion Residuals to see if there are one or two observation points that are changing this data significantly. If there were any outliers we could delete them and redo the analysis; however, with 45 data points for each group and a p-value of 0.6, if we deleted say 2 subjects from each group it is hard to believe that our p-value will shrink to below 0.05. If this was an actual case and we were to tell our manager our conclusion I would tell the manager that it would not make sense to do chemotherapy and radiation at the same time. Since there isn't evidence to prove that doing both helps there is no point in doing both. The reason being is that chemotherapy already takes a toll on the health and body of an individual. If you were to do both chemotherapy and radiation this would compound and decrease the health and toll on the body even more. So, since doing both isn't helping the person survive longer in my personal opinion it would make more sense to just carryout the chemotherapy instead of both.
+
